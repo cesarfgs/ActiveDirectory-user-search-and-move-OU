@@ -1,0 +1,33 @@
+
+### SEARCH USERS ACOUNT WITH MORE THAN 120 DAYS WIHOUT LOGON AND USERS THAT NAVER LOGGED IN ###
+### SCRIPT PART 01 ###
+
+Get-ADUser -server "server-name-here" -Filter {Enabled -eq $TRUE} -SearchBase "dn-of-base-ou-you-want-to-search" -Properties Name,SamAccountName,LastLogonDate | where-object {($_.DistinguishedName -notlike "*,dn-of-OU-you-want-to-avoid") -and ($_.DistinguishedName -notlike "*,dn-of-another-OU-you-want-to-avoid,*")} | Where {($_.LastLogonDate -lt (Get-Date).AddDays(-120)) -or ($_.LastLogonDate -eq $NULL)} | Sort | Select Name,SamAccountName,LastLogonDate,distinguishedname,pwdLastSet | Export-Csv C:\a\b\c\file-name.csv
+
+
+
+
+### DO A MOVE OF USERS ACCOUNT LISTED IN EXTERNEL FILE TO ANOTHER OU ###
+### SCRIPT PART 02 ###
+
+### DESTINY OU FOR ACCOUNTS LISTED IN EXTERNAL FILE
+$OUdestino =  "DN-OF-THE-DESTINY-OU"
+# TXT OR CSV EXTERNAL FILE WITH LIST OF ALL USERNAME ACCOUNTS THAT WILL BE MOVED
+$Arquivo_csv = Import-Csv -Path "C:\a\b\nome-do-arquivo.csv" 
+
+$Arquivo_csv | ForEach-Object {
+     # GET USER NAME THAT IS LISTED INTO AN EXTERNAL FILE (PS.: FIRST LINE MUST HAVE "name")
+     $DNdousuario  = (Get-ADUser -Identity $_.Name).distinguishedName
+     # MOVE THE USER TO THE DESTINY OU
+     Move-ADObject  -Identity $DNdousuario  -TargetPath $OUdestino
+   
+ }
+
+#PS.: Its important to notice that if you have more than 1 domain controller you will need to "point" the "script part 01" to all of than and make some treatment on the information collected before build the definitive username's account external file that will be used in the second part 
+
+
+
+
+
+First script part: Active directory script for powershell enviroment tha search users with old "lastlogon" time stamp greater tha 120 days and copy their username to a txt file.
+Second script part: Get all external file content (list of USERNAMES) read them and move all to the defined OU of your "taste"
